@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <header>Mini House - Price Prediction API</header>
+    <main>
+        <form action="/predict" id="price-form">
+            <div class="data">
+                <label for="area">Area (in square feet)</label>
+                <input id="area" name="area" type="number" required min="0" step="0.01">
+            </div>
+            <div class="data">
+                <label for="bedrooms">Number of Bedrooms</label>
+                <input id="bedrooms" name="bedrooms" type="number" required min="0" step="1">
+            </div>
+            <div class="data">
+                <label for="location">Location</label>
+                <input id="location" name="location" type="text">
+            </div>
+            <button type="submit">Predict Price</button>
+        </form>
+    </main>
+    <script>
+        const form = document.getElementById('price-form');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(form);
+            const data = {
+                area: parseFloat(formData.get('area')),
+                bedrooms: parseInt(formData.get('bedrooms')),
+                location: formData.get('location') || "other"
+            };
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                alert(`Predicted Price: $${result.predicted_price}`);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while predicting the price.');
+            }
+        });
+    </script>
+</body>
+
+</html>
