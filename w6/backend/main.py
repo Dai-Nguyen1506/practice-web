@@ -1,48 +1,40 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="../frontend"), name="static")
 
-class HouseInput(BaseModel):
+class HousePriceRequest(BaseModel):
+    area: float = Field(..., gt=0, description="Area of the house in square meters")
+    bedrooms: int = Field(..., ge=0, description="Number of bedrooms")
+    location: str = "other"
+
+class HousePricePrediction(BaseModel):
     area: float
     bedrooms: int
-    location: str = "other"
+    location: str
+    predicted_price: float
 
 @app.get("/")
 def root():
     return {"message": "Hello World"}
 
-@app.get("/predict")
-def predict_price(area: float, bedrooms: int, location: str = "other") -> float:
-    cost = 500000000 + area * 15000000 + bedrooms * 50000000
+@app.post("/predict", response_model=HousePricePrediction)
+def predict_price(data: HousePriceRequest):
+    cost = 500000000 + data.area * 15000000 + data.bedrooms * 50000000
 
-    if location == "hanoi":
+    if data.location == "hanoi":
         cost *= 1.2
-    elif location == "hcmc":
+    elif data.location == "hcmc":
         cost *= 1.5
 
-    return {
-        "area": area,
-        "bedrooms": bedrooms,
-        "location": location,
-        "predicted_price": cost
-    }
+    predict = HousePricePrediction(
+        area=data.area,
+        bedrooms=data.bedrooms,
+        location=data.location,
+        predicted_price=cost
+    )
 
-@app.post("/predict")
-def predict_price_post(house: HouseInput):
-    cost = 500000000 + house.area * 15000000 + house.bedrooms * 50000000
-
-    if house.location == "hanoi":
-        cost *= 1.2
-    elif house.location == "hcmc":
-        cost *= 1.5
-
-    return {
-        "area": house.area,
-        "bedrooms": house.bedrooms,
-        "location": house.location,
-        "predicted_price": cost
-    }
+    return predict
