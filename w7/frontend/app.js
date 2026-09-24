@@ -6,10 +6,15 @@ const priceInput = document.getElementById("price");
 const tableBody = document.getElementById("item-table-body");
 const cancelBtn = document.getElementById("cancel-btn");
 
-async function fetchItems() {
+async function fetchData() {
   try {
     const response = await fetch(API_URL);
-    const items = await response.json();
+    if (!response.ok) {
+      throw new Error(`Fetch failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const items = data.items;
 
     tableBody.innerHTML = "";
 
@@ -19,7 +24,7 @@ async function fetchItems() {
       row.innerHTML = `
         <td>${item.id}</td>
         <td>${item.name}</td>
-        <td>${item.price}</td>
+        <td>${Number(item.price).toFixed(2)}</td>
         <td>
           <button class="delete-btn" data-id="${item.id}">Delete</button>
         </td>
@@ -30,7 +35,12 @@ async function fetchItems() {
 
     bindDeleteButtons();
   } catch (error) {
-    console.error("Fetch failed:", error);
+    console.error("Fetch data failed:", error);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="4">Không thể tải dữ liệu từ backend</td>
+      </tr>
+    `;
     alert("Không thể tải dữ liệu từ backend");
   }
 }
@@ -60,7 +70,7 @@ async function addItem(event) {
     }
 
     form.reset();
-    fetchItems();
+    await fetchData();
   } catch (error) {
     console.error("Add error:", error);
     alert("Thêm dữ liệu thất bại");
@@ -77,7 +87,7 @@ async function deleteItem(id) {
       throw new Error("Delete failed");
     }
 
-    fetchItems();
+    await fetchData();
   } catch (error) {
     console.error("Delete error:", error);
     alert("Xóa dữ liệu thất bại");
@@ -96,4 +106,4 @@ function bindDeleteButtons() {
 form.addEventListener("submit", addItem);
 cancelBtn.addEventListener("click", () => form.reset());
 
-fetchItems();
+fetchData();

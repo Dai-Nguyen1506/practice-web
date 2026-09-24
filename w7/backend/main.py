@@ -1,14 +1,18 @@
-from pathlib import Path
+import time
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="Item API")
 
-frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
-app.mount("/static", StaticFiles(directory=str(frontend_dir)), name="static")
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5500"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ItemCreate(BaseModel):
     name: str = Field(..., min_length=1)
@@ -30,10 +34,8 @@ class ItemUpdate(BaseModel):
     name: str | None
     price: float | None
 
-
 _items: list[ItemPublic] = []
-_next_id = 0
-
+_next_id: int = 1
 
 def _find(item_id: int) -> ItemPublic | None:
     for item in _items:
@@ -95,11 +97,10 @@ def get_item(item_id: int):
 def create_item(item: ItemCreate):
     if _check_name_exists(item.name):
         raise HTTPException(status_code=409, detail="Item with this name already exists")
-
-    id = _next_id
+    global _next_id
 
     new_item = ItemPublic(
-        id=id,
+        id=_next_id,
         name=item.name.lower().strip(),
         price=item.price,
     )
@@ -152,3 +153,17 @@ def delete_item(item_id: int):
 
     _items.remove(item)
     return None
+
+
+
+_card = []
+
+@app.post("/card/add")
+def add_to_card(item: str):
+    _card.append(item)
+    return item
+
+@app.get("/card")
+def get_card():
+    print("--> get card")
+    return _card
